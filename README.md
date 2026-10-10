@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PM Tool
 
-## Getting Started
+A small project management app: projects, a kanban board, task details, team members and comments.
 
-First, run the development server:
+## Features
+
+- Email and password accounts
+- Projects with an owner and members
+- Tasks with status, priority, due date, assignee and description
+- Kanban board with drag and drop, plus a filterable list view
+- Comments on tasks
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| Styling | Tailwind CSS 4 |
+| Database | PostgreSQL 17 |
+| ORM and migrations | Drizzle ORM, drizzle-kit |
+| Auth | Better Auth (email and password, sessions stored in Postgres) |
+| Validation | Zod |
+| Drag and drop | dnd-kit |
+| Tests | Vitest, PGlite |
+
+## Quick start
+
+You need Node.js 22 or newer and a running PostgreSQL server. [docs/setup.md](docs/setup.md) covers installing PostgreSQL on Windows and creating the database.
 
 ```bash
+npm install
+cp .env.example .env.local   # then fill in the values
+npm run db:migrate           # create the tables
+npm run db:seed              # optional: demo users, project and tasks
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. After seeding you can log in as `alex@example.com` (project owner) or `sam@example.com` (member), both with the password `password123`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` / `npm start` | Build and run for production |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | Generate route types, then run the TypeScript compiler |
+| `npm test` | Unit and integration tests (no database server needed) |
+| `npm run db:generate` | Create a migration from changes to `src/db/schema` |
+| `npm run db:migrate` | Apply pending migrations |
+| `npm run db:seed` | Insert demo data into an empty database |
+| `npm run db:studio` | Browse the database in Drizzle Studio |
 
-## Learn More
+## Documentation
 
-To learn more about Next.js, take a look at the following resources:
+- [Setup](docs/setup.md): PostgreSQL, environment variables, first run
+- [Architecture](docs/architecture.md): folder structure, request flow, auth and permissions
+- [Database](docs/database.md): tables, relationships, migration workflow
+- [Conventions](docs/conventions.md): how to add a feature, validation, errors, tests
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Not in the MVP
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Invitation emails, email verification, password reset, OAuth sign-in, realtime updates, file attachments, notifications and an activity log. A project member is added by the email of an account that already exists.
