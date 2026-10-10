@@ -1,6 +1,7 @@
 import { asc, eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { tasks, type TaskStatus } from '@/db/schema'
+import { addComment } from '@/features/comments/actions'
 import { createProject, deleteProject } from '@/features/projects/actions'
 import { createTask, deleteTask, moveTask, updateTask } from '@/features/tasks/actions'
 import { listTasks } from '@/features/tasks/queries'
@@ -113,6 +114,20 @@ describe('task queries', () => {
 
     expect((await listTasks(projectId, { status: 'done' })).map((t) => t.title)).toEqual(['x'])
     expect(await listTasks(projectId, { assigneeId: 'none' })).toHaveLength(2)
+  })
+
+  it('counts the comments on each task', async () => {
+    const a = await addTask('a')
+    await addTask('b')
+    expectOk(await addComment(projectId, a, { body: 'First' }))
+    expectOk(await addComment(projectId, a, { body: 'Second' }))
+
+    const counts = (await listTasks(projectId)).map((t) => [t.title, t.commentCount])
+
+    expect(counts).toEqual([
+      ['a', 2],
+      ['b', 0],
+    ])
   })
 
   it('removes tasks together with their project', async () => {

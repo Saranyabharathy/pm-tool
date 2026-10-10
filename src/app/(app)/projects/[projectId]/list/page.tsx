@@ -1,23 +1,29 @@
+import { ListChecks, SearchX } from 'lucide-react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
-import { buttonClass } from '@/components/ui/button'
-import { Select } from '@/components/ui/field'
-import type { TaskStatus } from '@/db/schema'
+import { PageContainer } from '@/components/shell/page-container'
+import { EmptyState } from '@/components/ui/empty-state'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { listMembers } from '@/features/members/queries'
-import { CreateTaskButton } from '@/features/tasks/components/create-task-button'
-import { DueDate, PriorityBadge, StatusBadge } from '@/features/tasks/components/task-badges'
-import { STATUS_LABELS, TASK_STATUSES } from '@/features/tasks/constants'
+import { DueChip, PriorityBadge, StatusBadge } from '@/features/tasks/components/task-badges'
+import { TaskFilters } from '@/features/tasks/components/task-filters'
+import { TASK_STATUSES } from '@/features/tasks/constants'
 import { listTasks, UNASSIGNED } from '@/features/tasks/queries'
 import { todayIso } from '@/lib/format'
+
+export const metadata: Metadata = { title: 'List' }
 
 type ListPageProps = {
   params: Promise<{ projectId: string }>
   searchParams: Promise<{ status?: string; assignee?: string }>
 }
 
+const headClass = 'sticky top-0 z-10 bg-card px-4 py-2.5 text-left text-xs font-medium text-muted-foreground'
+
 export default async function ListPage({ params, searchParams }: ListPageProps) {
   const { projectId } = await params
   const filters = await searchParams
-  const status = TASK_STATUSES.find((value) => value === filters.status) as TaskStatus | undefined
+  const status = TASK_STATUSES.find((value) => value === filters.status)
   const members = await listMembers(projectId)
   // Ignore assignee values that are not members, rather than showing an empty list.
   const assigneeId =
@@ -30,83 +36,89 @@ export default async function ListPage({ params, searchParams }: ListPageProps) 
   const filtered = Boolean(status || assigneeId)
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <form className="flex flex-wrap items-end gap-3">
-          <label className="text-xs font-medium text-slate-300">
-            Status
-            <Select name="status" defaultValue={status ?? ''} className="mt-1 py-2">
-              <option value="">All</option>
-              {TASK_STATUSES.map((value) => (
-                <option key={value} value={value}>
-                  {STATUS_LABELS[value]}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="text-xs font-medium text-slate-300">
-            Assignee
-            <Select name="assignee" defaultValue={assigneeId ?? ''} className="mt-1 py-2">
-              <option value="">Anyone</option>
-              <option value={UNASSIGNED}>Unassigned</option>
-              {members.map((member) => (
-                <option key={member.userId} value={member.userId}>
-                  {member.name}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <button type="submit" className={buttonClass('secondary')}>
-            Apply
-          </button>
-          {filtered && (
-            <Link href={`/projects/${projectId}/list`} className={buttonClass('ghost')}>
-              Clear
-            </Link>
-          )}
-        </form>
-        <CreateTaskButton projectId={projectId} members={members} />
+    <PageContainer className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TaskFilters
+          members={members}
+          status={status ?? ''}
+          assignee={assigneeId ?? ''}
+          unassignedValue={UNASSIGNED}
+        />
+        <p className="text-[13px] text-muted-foreground tabular-nums" aria-live="polite">
+          {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+        </p>
       </div>
 
       {tasks.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center text-sm text-slate-400">
-          {filtered ? 'No tasks match these filters.' : 'No tasks yet. Create the first one.'}
-        </div>
+        filtered ? (
+          <EmptyState
+            icon={SearchX}
+            title="No tasks match these filters"
+            description="Try a different status or assignee, or clear the filters."
+          />
+        ) : (
+          <EmptyState
+            icon={ListChecks}
+            title="No tasks yet"
+            description='Use "New task" above to add the first one to this project.'
+          />
+        )
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-white/10">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
-              <tr>
-                <th className="px-4 py-3 font-medium">Task</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Priority</th>
-                <th className="px-4 py-3 font-medium">Assignee</th>
-                <th className="px-4 py-3 font-medium">Due</th>
+        <div className="overflow-x-auto rounded-xl border bg-card">
+          {/* The minimum width keeps titles readable on phones; the table scrolls sideways instead. */}
+          <table className="w-full min-w-[640px] border-collapse text-[13px]">
+            <thead>
+              <tr className="border-b">
+                <th scope="col" className={headClass}>
+                  Task
+                </th>
+                <th scope="col" className={headClass}>
+                  Status
+                </th>
+                <th scope="col" className={headClass}>
+                  Priority
+                </th>
+                <th scope="col" className={headClass}>
+                  Assignee
+                </th>
+                <th scope="col" className={headClass}>
+                  Due
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody>
               {tasks.map((task) => (
-                <tr key={task.id} className="hover:bg-white/5">
-                  <td className="px-4 py-3">
+                // The title link is stretched over the row, so the whole row is clickable.
+                <tr key={task.id} className="relative border-b transition-colors last:border-b-0 hover:bg-muted">
+                  <td className="h-10 max-w-0 w-full px-4">
                     <Link
                       href={`/projects/${projectId}/tasks/${task.id}`}
-                      className="font-medium text-slate-100 wrap-anywhere hover:text-blue-300"
+                      className="block truncate text-sm font-medium outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
                     >
                       {task.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 whitespace-nowrap">
                     <StatusBadge status={task.status} />
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 whitespace-nowrap">
                     <PriorityBadge priority={task.priority} />
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-slate-300">{task.assigneeName ?? 'Unassigned'}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {task.dueDate ? (
-                      <DueDate dueDate={task.dueDate} status={task.status} today={today} />
+                  <td className="px-4 whitespace-nowrap">
+                    {task.assigneeId && task.assigneeName ? (
+                      <span className="flex items-center gap-2">
+                        <UserAvatar id={task.assigneeId} name={task.assigneeName} size="md" />
+                        {task.assigneeName}
+                      </span>
                     ) : (
-                      <span className="text-xs text-slate-500">None</span>
+                      <span className="text-muted-foreground">Unassigned</span>
+                    )}
+                  </td>
+                  <td className="px-4 whitespace-nowrap">
+                    {task.dueDate ? (
+                      <DueChip dueDate={task.dueDate} status={task.status} today={today} />
+                    ) : (
+                      <span className="text-muted-foreground">No date</span>
                     )}
                   </td>
                 </tr>
@@ -115,6 +127,6 @@ export default async function ListPage({ params, searchParams }: ListPageProps) 
           </table>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

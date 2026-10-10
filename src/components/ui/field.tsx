@@ -1,25 +1,24 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
-import { cn } from '@/lib/cn'
-
-const controlClass =
-  'w-full px-4 py-2.5 bg-slate-900/60 border border-slate-700/60 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition disabled:opacity-60'
+import type { ReactNode, SelectHTMLAttributes } from 'react'
+import { cn } from '@/lib/utils'
 
 type FieldProps = {
   label: string
   htmlFor: string
   errors?: string[]
+  hint?: string
   children: ReactNode
 }
 
-export function Field({ label, htmlFor, errors, children }: FieldProps) {
+export function Field({ label, htmlFor, errors, hint, children }: FieldProps) {
   return (
-    <div>
-      <label htmlFor={htmlFor} className="block text-xs font-medium text-slate-300 mb-1">
+    <div className="space-y-1.5">
+      <label htmlFor={htmlFor} className="block text-xs font-medium text-muted-foreground">
         {label}
       </label>
       {children}
+      {hint && !errors?.length && <p className="text-xs text-muted-foreground">{hint}</p>}
       {errors?.map((error) => (
-        <p key={error} className="mt-1 text-xs text-rose-400">
+        <p key={error} className="text-xs text-destructive">
           {error}
         </p>
       ))}
@@ -27,14 +26,18 @@ export function Field({ label, htmlFor, errors, children }: FieldProps) {
   )
 }
 
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(controlClass, className)} {...props} />
-}
-
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(controlClass, 'resize-y', className)} {...props} />
-}
-
+// A native select styled like Input: best keyboard and mobile behaviour for
+// short option lists.
 export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(controlClass, 'scheme-dark', className)} {...props} />
+  return (
+    <select
+      className={cn(
+        'h-8 w-full min-w-0 rounded-lg border border-input bg-card px-2 text-sm text-foreground outline-none transition-colors',
+        'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        className,
+      )}
+      {...props}
+    />
+  )
 }

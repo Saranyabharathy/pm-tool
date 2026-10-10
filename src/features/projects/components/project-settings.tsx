@@ -1,9 +1,11 @@
 'use client'
 
+import { Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { FormMessage } from '@/components/ui/form-message'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { deleteProject, updateProject } from '../actions'
 import type { ProjectInput } from '../schemas'
 import { ProjectForm } from './project-form'
@@ -19,6 +21,7 @@ export function ProjectSettings({ projectId, initial, canEdit }: ProjectSettings
     <ProjectForm
       initial={initial}
       submitLabel="Save changes"
+      successMessage="Project updated"
       disabled={!canEdit}
       onSubmit={(input) => updateProject(projectId, input)}
     />
@@ -26,28 +29,38 @@ export function ProjectSettings({ projectId, initial, canEdit }: ProjectSettings
 }
 
 export function DeleteProjectButton({ projectId, projectName }: { projectId: string; projectName: string }) {
-  const [error, setError] = useState('')
+  const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
 
   function handleDelete() {
-    if (!window.confirm(`Delete "${projectName}" with all of its tasks and comments? This cannot be undone.`)) {
-      return
-    }
-    setError('')
     startTransition(async () => {
       const result = await deleteProject(projectId)
-      if (result.ok) router.push('/projects')
-      else setError(result.error)
+      if (result.ok) {
+        toast.success('Project deleted')
+        router.push('/projects')
+      } else {
+        setOpen(false)
+        toast.error(result.error)
+      }
     })
   }
 
   return (
-    <div className="space-y-3">
-      <Button variant="danger" onClick={handleDelete} disabled={pending}>
-        {pending ? 'Deleting...' : 'Delete project'}
+    <>
+      <Button variant="destructive" onClick={() => setOpen(true)}>
+        <Trash2 aria-hidden />
+        Delete project
       </Button>
-      <FormMessage>{error}</FormMessage>
-    </div>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`Delete "${projectName}"?`}
+        description="All of its tasks and comments are deleted with it. This cannot be undone."
+        confirmLabel="Delete project"
+        pending={pending}
+        onConfirm={handleDelete}
+      />
+    </>
   )
 }

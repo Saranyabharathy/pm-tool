@@ -1,13 +1,24 @@
 import type { Metadata } from 'next'
+import { PageContainer } from '@/components/shell/page-container'
 import { MemberList } from '@/features/members/components/member-list'
 import { listMembers } from '@/features/members/queries'
 import { DeleteProjectButton, ProjectSettings } from '@/features/projects/components/project-settings'
 import { getProject } from '@/features/projects/queries'
 
-export const metadata: Metadata = { title: 'Project settings' }
+export const metadata: Metadata = { title: 'Settings' }
 
 type SettingsPageProps = {
   params: Promise<{ projectId: string }>
+}
+
+function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border bg-card p-5">
+      <h2 className="text-base font-semibold">{title}</h2>
+      <p className="mt-0.5 mb-4 text-[13px] text-muted-foreground">{description}</p>
+      {children}
+    </section>
+  )
 }
 
 export default async function SettingsPage({ params }: SettingsPageProps) {
@@ -16,33 +27,36 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
   const isOwner = role === 'owner'
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <h2 className="mb-1 text-lg font-semibold text-white">Details</h2>
-        {!isOwner && <p className="mb-4 text-sm text-slate-400">Only the project owner can change these.</p>}
-        <div className="mt-4">
-          <ProjectSettings
-            projectId={project.id}
-            initial={{ name: project.name, description: project.description }}
-            canEdit={isOwner}
-          />
-        </div>
-      </section>
+    <PageContainer className="max-w-[672px] space-y-6">
+      <Section
+        title="Details"
+        description={
+          isOwner ? 'The name and description everyone in the project sees.' : 'Only the project owner can change these.'
+        }
+      >
+        <ProjectSettings
+          projectId={project.id}
+          initial={{ name: project.name, description: project.description }}
+          canEdit={isOwner}
+        />
+      </Section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Members</h2>
+      <Section
+        title="Members"
+        description={`${members.length} ${members.length === 1 ? 'person has' : 'people have'} access to this project.`}
+      >
         <MemberList projectId={project.id} members={members} canManage={isOwner} />
-      </section>
+      </Section>
 
       {isOwner && (
-        <section className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-6">
-          <h2 className="mb-1 text-lg font-semibold text-white">Delete project</h2>
-          <p className="mb-4 text-sm text-slate-400">
+        <section className="rounded-xl border border-destructive/40 bg-card p-5">
+          <h2 className="text-base font-semibold">Delete project</h2>
+          <p className="mt-0.5 mb-4 text-[13px] text-muted-foreground">
             Permanently removes the project with all of its tasks and comments.
           </p>
           <DeleteProjectButton projectId={project.id} projectName={project.name} />
         </section>
       )}
-    </div>
+    </PageContainer>
   )
 }

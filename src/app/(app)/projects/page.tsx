@@ -1,7 +1,9 @@
+import { FolderKanban } from 'lucide-react'
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
+import { PageContainer } from '@/components/shell/page-container'
+import { EmptyState } from '@/components/ui/empty-state'
 import { CreateProjectButton } from '@/features/projects/components/create-project-button'
+import { ProjectTile } from '@/features/projects/components/project-tile'
 import { listProjects } from '@/features/projects/queries'
 
 export const metadata: Metadata = { title: 'Projects' }
@@ -10,40 +12,48 @@ export default async function ProjectsPage() {
   const projects = await listProjects()
 
   return (
-    <div className="space-y-6">
+    <PageContainer className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-white">Projects</h1>
-        <CreateProjectButton />
+        <div>
+          <h1 className="text-xl font-semibold">Projects</h1>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            {projects.length === 0
+              ? 'Projects you own or are a member of appear here.'
+              : `${projects.length} ${projects.length === 1 ? 'project' : 'projects'} you own or are a member of`}
+          </p>
+        </div>
+        {projects.length > 0 && <CreateProjectButton />}
       </div>
 
       {projects.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
-          <p className="text-slate-300">You have no projects yet.</p>
-          <p className="mt-1 text-sm text-slate-500">Create one to start adding tasks.</p>
-        </div>
+        <EmptyState
+          icon={FolderKanban}
+          title="No projects yet"
+          description="Create your first project to get a board, add tasks and invite your team."
+          action={<CreateProjectButton />}
+        />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+          {projects.map((project, index) => (
             <li key={project.id}>
-              <Link
-                href={`/projects/${project.id}`}
-                className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-blue-500/40 hover:bg-white/10"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-semibold text-white wrap-anywhere">{project.name}</h2>
-                  {project.role === 'owner' && <Badge tone="blue">Owner</Badge>}
-                </div>
-                <p className="mt-2 line-clamp-2 flex-1 text-sm text-slate-400">
-                  {project.description || 'No description.'}
-                </p>
-                <p className="mt-4 text-xs text-slate-500">
-                  {project.openTaskCount} open · {project.taskCount} total
-                </p>
-              </Link>
+              <ProjectTile
+                index={index}
+                project={{
+                  id: project.id,
+                  name: project.name,
+                  description: project.description,
+                  role: project.role,
+                  taskCount: project.taskCount,
+                  openTaskCount: project.openTaskCount,
+                }}
+              />
             </li>
           ))}
+          <li>
+            <CreateProjectButton trigger="tile" />
+          </li>
         </ul>
       )}
-    </div>
+    </PageContainer>
   )
 }

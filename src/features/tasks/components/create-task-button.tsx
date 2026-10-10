@@ -1,8 +1,9 @@
 'use client'
 
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
+import { Modal } from '@/components/ui/modal'
 import type { Member } from '@/features/members/queries'
 import { createTask } from '../actions'
 import { TaskForm } from './task-form'
@@ -12,16 +13,20 @@ export function CreateTaskButton({ projectId, members }: { projectId: string; me
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>New task</Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="New task">
+      <Button onClick={() => setOpen(true)}>
+        <Plus aria-hidden />
+        New task
+      </Button>
+      <Modal open={open} onOpenChange={setOpen} title="New task">
         <TaskForm
           members={members}
           submitLabel="Create task"
+          successMessage="Task created"
           onCancel={() => setOpen(false)}
           onSuccess={() => setOpen(false)}
           onSubmit={(input) => createTask(projectId, input)}
         />
-      </Dialog>
+      </Modal>
     </>
   )
 }

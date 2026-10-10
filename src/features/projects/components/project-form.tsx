@@ -1,42 +1,44 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Field, Input, Textarea } from '@/components/ui/field'
+import { Field } from '@/components/ui/field'
 import { FormMessage } from '@/components/ui/form-message'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import { Textarea } from '@/components/ui/textarea'
 import type { ActionResult, FieldErrors } from '@/lib/action'
 import type { ProjectInput } from '../schemas'
 
 type ProjectFormProps = {
   initial?: ProjectInput
   submitLabel: string
+  // Shown as a toast when the action succeeds.
+  successMessage: string
   disabled?: boolean
   onSubmit: (input: ProjectInput) => Promise<ActionResult<unknown>>
-  onSuccess?: () => void
   onCancel?: () => void
 }
 
-export function ProjectForm({ initial, submitLabel, disabled, onSubmit, onSuccess, onCancel }: ProjectFormProps) {
+export function ProjectForm({ initial, submitLabel, successMessage, disabled, onSubmit, onCancel }: ProjectFormProps) {
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [error, setError] = useState('')
-  const [saved, setSaved] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [pending, startTransition] = useTransition()
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    setSaved(false)
     setFieldErrors({})
 
     startTransition(async () => {
       const result = await onSubmit({ name, description })
       if (result.ok) {
-        setSaved(true)
-        onSuccess?.()
+        toast.success(successMessage)
       } else {
-        setError(result.error)
+        setError(result.fieldErrors ? '' : result.error)
         setFieldErrors(result.fieldErrors ?? {})
       }
     })
@@ -53,6 +55,8 @@ export function ProjectForm({ initial, submitLabel, disabled, onSubmit, onSucces
           required
           maxLength={80}
           disabled={disabled}
+          aria-invalid={Boolean(fieldErrors.name)}
+          autoFocus={!initial}
         />
       </Field>
 
@@ -65,11 +69,11 @@ export function ProjectForm({ initial, submitLabel, disabled, onSubmit, onSucces
           rows={3}
           maxLength={500}
           disabled={disabled}
+          aria-invalid={Boolean(fieldErrors.description)}
         />
       </Field>
 
       <FormMessage>{error}</FormMessage>
-      {!onSuccess && saved && <FormMessage tone="success">Saved.</FormMessage>}
 
       {!disabled && (
         <div className="flex justify-end gap-2">
@@ -79,7 +83,8 @@ export function ProjectForm({ initial, submitLabel, disabled, onSubmit, onSucces
             </Button>
           )}
           <Button type="submit" disabled={pending}>
-            {pending ? 'Saving...' : submitLabel}
+            {pending && <Spinner />}
+            {submitLabel}
           </Button>
         </div>
       )}

@@ -4,6 +4,7 @@ import {
   closestCorners,
   DndContext,
   DragOverlay,
+  KeyboardCode,
   KeyboardSensor,
   PointerSensor,
   useDroppable,
@@ -15,14 +16,17 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useId, useRef, useState, useTransition } from 'react'
-import { FormMessage } from '@/components/ui/form-message'
+import { toast } from 'sonner'
 import type { TaskStatus } from '@/db/schema'
-import { cn } from '@/lib/cn'
+import { cn } from '@/lib/utils'
 import { moveTask } from '../actions'
 import { STATUS_LABELS, TASK_STATUSES } from '../constants'
 import { moveItem, type Columns } from '../position'
 import type { TaskSummary } from '../queries'
+import { CardComposer } from './card-composer'
 import { TaskCard } from './task-card'
 
 type BoardProps = {
@@ -41,7 +45,7 @@ function isStatus(id: string): id is TaskStatus {
   return (TASK_STATUSES as readonly string[]).includes(id)
 }
 
-// A drop target is either a card or, for an empty area, the column itself.
+// A drop target is either a card or, for an empty area, the list itself.
 function findStatus(columns: Columns<TaskSummary>, id: string) {
   if (isStatus(id)) return id
   return TASK_STATUSES.find((status) => columns[status].some((task) => task.id === id))
@@ -51,7 +55,6 @@ export function Board({ projectId, tasks, today }: BoardProps) {
   const [columns, setColumns] = useState(() => groupByStatus(tasks))
   const [syncedTasks, setSyncedTasks] = useState(tasks)
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [error, setError] = useState('')
   const [, startTransition] = useTransition()
   const beforeDrag = useRef<Columns<TaskSummary> | null>(null)
   const dndId = useId()
@@ -63,18 +66,21 @@ export function Board({ projectId, tasks, today }: BoardProps) {
   }
 
   const sensors = useSensors(
-    // The distance lets a plain click through to the card's link.
+    // The distance lets a plain click through to open the card.
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    // Space picks up and drops; Enter is left free to open the card.
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: { start: [KeyboardCode.Space], cancel: [KeyboardCode.Esc], end: [KeyboardCode.Space] },
+    }),
   )
 
   function handleDragStart({ active }: DragStartEvent) {
     beforeDrag.current = columns
     setActiveId(String(active.id))
-    setError('')
   }
 
-  // Moves the card into another column as soon as it is dragged over it.
+  // Moves the card into another list as soon as it is dragged over it.
   function handleDragOver({ active, over }: DragOverEvent) {
     if (!over) return
     const taskId = String(active.id)
@@ -122,7 +128,7 @@ export function Board({ projectId, tasks, today }: BoardProps) {
       const result = await moveTask(projectId, { taskId, status, index })
       if (!result.ok) {
         setColumns(original)
-        setError(result.error)
+        toast.error(`The card was moved back. ${result.error}`)
       }
     })
   }
@@ -137,87 +143,118 @@ export function Board({ projectId, tasks, today }: BoardProps) {
   const activeTask = activeStatus ? columns[activeStatus].find((task) => task.id === activeId) : undefined
 
   return (
-    <div className="space-y-3">
-      <FormMessage>{error}</FormMessage>
-      <DndContext
-        id={dndId}
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          {TASK_STATUSES.map((status) => (
-            <BoardColumn key={status} status={status} tasks={columns[status]} projectId={projectId} today={today} />
-          ))}
-        </div>
-        <DragOverlay>
-          {activeTask && activeStatus && (
-            <div className="rotate-2 cursor-grabbing">
-              <TaskCard projectId={projectId} task={activeTask} status={activeStatus} today={today} />
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
-    </div>
+    <DndContext
+      id={dndId}
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="flex h-full items-start gap-3 p-3 sm:p-4">
+        {TASK_STATUSES.map((status) => (
+          <BoardList key={status} status={status} tasks={columns[status]} projectId={projectId} today={today} />
+        ))}
+        {/* Keeps the end padding when the board scrolls sideways. */}
+        <div className="w-px shrink-0" aria-hidden />
+      </div>
+      <DragOverlay>
+        {activeTask && activeStatus && (
+          <TaskCard
+            task={activeTask}
+            status={activeStatus}
+            today={today}
+            className="rotate-3 cursor-grabbing shadow-overlay"
+          />
+        )}
+      </DragOverlay>
+    </DndContext>
   )
 }
 
-type BoardColumnProps = {
+type BoardListProps = {
   status: TaskStatus
   tasks: TaskSummary[]
   projectId: string
   today: string
 }
 
-function BoardColumn({ status, tasks, projectId, today }: BoardColumnProps) {
+function BoardList({ status, tasks, projectId, today }: BoardListProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
+  const headingId = useId()
 
   return (
     <section
-      aria-label={STATUS_LABELS[status]}
+      aria-labelledby={headingId}
       className={cn(
-        'flex flex-col rounded-2xl border bg-white/5 p-3 transition',
-        isOver ? 'border-blue-500/40' : 'border-white/10',
+        'flex max-h-full w-[272px] shrink-0 flex-col rounded-xl bg-list outline-2 -outline-offset-2 transition-[outline-color]',
+        isOver ? 'outline-primary' : 'outline-transparent',
       )}
     >
-      <h2 className="mb-3 flex items-center justify-between px-1 text-sm font-semibold text-slate-200">
+      <h2 id={headingId} className="flex items-center justify-between px-4 pt-3 pb-2 text-sm font-semibold">
         {STATUS_LABELS[status]}
-        <span className="text-xs font-normal text-slate-500">{tasks.length}</span>
+        <span className="text-xs font-normal text-muted-foreground tabular-nums">
+          {tasks.length}
+          <span className="sr-only">{tasks.length === 1 ? ' card' : ' cards'}</span>
+        </span>
       </h2>
       <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
-        <div ref={setNodeRef} className="flex min-h-24 flex-1 flex-col gap-2">
+        <div ref={setNodeRef} className="scroll-thin flex min-h-2 flex-1 flex-col gap-2 overflow-y-auto px-2 py-0.5">
           {tasks.map((task) => (
-            <SortableTaskCard key={task.id} task={task} status={status} projectId={projectId} today={today} />
+            <SortableCard key={task.id} task={task} status={status} projectId={projectId} today={today} />
           ))}
-          {tasks.length === 0 && <p className="px-1 py-6 text-center text-xs text-slate-500">No tasks</p>}
         </div>
       </SortableContext>
+      <div className="p-2">
+        <CardComposer projectId={projectId} status={status} />
+      </div>
     </section>
   )
 }
 
-type SortableTaskCardProps = {
+type SortableCardProps = {
   task: TaskSummary
   status: TaskStatus
   projectId: string
   today: string
 }
 
-function SortableTaskCard({ task, status, projectId, today }: SortableTaskCardProps) {
+function SortableCard({ task, status, projectId, today }: SortableCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const router = useRouter()
+  const href = `/projects/${projectId}/tasks/${task.id}`
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('cursor-grab touch-none rounded-xl', isDragging && 'opacity-40')}
       {...attributes}
       {...listeners}
+      aria-roledescription="draggable card"
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          router.push(href)
+          return
+        }
+        listeners?.onKeyDown?.(event)
+      }}
+      className={cn(
+        'group/card shrink-0 cursor-pointer touch-none rounded-lg outline-none',
+        'focus-visible:ring-2 focus-visible:ring-ring',
+        // The slot the card was picked up from stays as a placeholder.
+        isDragging && 'bg-foreground/10 *:invisible',
+      )}
     >
-      <TaskCard projectId={projectId} task={task} status={status} today={today} />
+      {/* The wrapper is the keyboard target, so the link stays out of the tab order. */}
+      <Link href={href} draggable={false} tabIndex={-1} className="block rounded-lg">
+        <TaskCard
+          task={task}
+          status={status}
+          today={today}
+          className="ring-ring transition-shadow group-hover/card:ring-2"
+        />
+      </Link>
     </div>
   )
 }

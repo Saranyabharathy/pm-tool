@@ -24,7 +24,8 @@ export async function addComment(projectId: string, taskId: string, input: Comme
 
     await db.insert(comments).values({ taskId, authorId: user.id, body })
 
-    revalidatePath(`/projects/${projectId}/tasks/${taskId}`)
+    // The board shows a comment count on each card, so refresh the whole project.
+    revalidatePath(`/projects/${projectId}`, 'layout')
   })
 }
 
@@ -46,6 +47,6 @@ export async function deleteComment(projectId: string, commentId: string) {
 
     await db.delete(comments).where(eq(comments.id, commentId))
 
-    revalidatePath(`/projects/${projectId}/tasks/${comment.taskId}`)
+    revalidatePath(`/projects/${projectId}`, 'layout')
   })
 }

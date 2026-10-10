@@ -1,15 +1,23 @@
 'use client'
 
+import { TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-2xl font-bold text-white">Something went wrong</h1>
-      <p className="text-sm text-slate-400">The page could not be loaded. Please try again.</p>
-      <Button variant="secondary" onClick={reset}>
-        Try again
-      </Button>
+    <div className="flex flex-1 items-center justify-center p-6">
+      <EmptyState
+        icon={TriangleAlert}
+        title="Something went wrong"
+        description="The page could not be loaded. Your data is safe; please try again."
+        className="border-none"
+        action={
+          <Button variant="outline" onClick={reset}>
+            Try again
+          </Button>
+        }
+      />
     </div>
   )
 }

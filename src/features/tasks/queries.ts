@@ -1,8 +1,8 @@
-import { and, asc, eq, isNull, type SQL } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { z } from 'zod'
 import { db } from '@/db'
-import { tasks, user, type TaskStatus } from '@/db/schema'
+import { comments, tasks, user, type TaskStatus } from '@/db/schema'
 import { requireProjectAccess } from '@/lib/permissions'
 
 export const UNASSIGNED = 'none'
@@ -30,6 +30,7 @@ export async function listTasks(projectId: string, filters: TaskFilters = {}) {
       dueDate: tasks.dueDate,
       assigneeId: tasks.assigneeId,
       assigneeName: user.name,
+      commentCount: sql<number>`(select count(*)::int from ${comments} where ${comments.taskId} = ${tasks.id})`,
     })
     .from(tasks)
     .leftJoin(user, eq(user.id, tasks.assigneeId))

@@ -1,17 +1,228 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Design tokens. Values and usage rules are documented in DESIGN.md. */
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-geist-sans), system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-list: var(--list);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Project and avatar hues */
+  --color-hue-1: var(--hue-1);
+  --color-hue-2: var(--hue-2);
+  --color-hue-3: var(--hue-3);
+  --color-hue-4: var(--hue-4);
+  --color-hue-5: var(--hue-5);
+  --color-hue-6: var(--hue-6);
+  --color-hue-7: var(--hue-7);
+  --color-hue-8: var(--hue-8);
+
+  /* Label fills and their text colours */
+  --color-label-red: var(--label-red);
+  --color-label-red-foreground: var(--label-red-foreground);
+  --color-label-amber: var(--label-amber);
+  --color-label-amber-foreground: var(--label-amber-foreground);
+  --color-label-grey: var(--label-grey);
+  --color-label-grey-foreground: var(--label-grey-foreground);
+  --color-label-blue: var(--label-blue);
+  --color-label-blue-foreground: var(--label-blue-foreground);
+  --color-label-green: var(--label-green);
+  --color-label-green-foreground: var(--label-green-foreground);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-overlay: var(--shadow-overlay);
 }
 
-/* The app is dark-only for now. */
-html {
-  color-scheme: dark;
+:root {
+  --radius: 8px;
+
+  --background: #f7f8f9;
+  --foreground: #172b4d;
+  --card: #ffffff;
+  --card-foreground: #172b4d;
+  --popover: #ffffff;
+  --popover-foreground: #172b4d;
+  --list: #f1f2f4;
+  --primary: #0c66e4;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f2f4;
+  --secondary-foreground: #172b4d;
+  --muted: #f1f2f4;
+  --muted-foreground: #626f86;
+  --accent: #e9f2ff;
+  --accent-foreground: #0055cc;
+  --destructive: #c9372c;
+  --success: #1f845a;
+  --warning: #a54800;
+  --border: #dcdfe4;
+  --input: #c1c7d0;
+  --ring: #388bff;
+  --overlay: rgb(9 30 66 / 0.5);
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #172b4d;
+  --sidebar-primary: #0c66e4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9f2ff;
+  --sidebar-accent-foreground: #0055cc;
+  --sidebar-border: #dcdfe4;
+  --sidebar-ring: #388bff;
+
+  --label-red: #ffeceb;
+  --label-red-foreground: #ae2e24;
+  --label-amber: #fff7d6;
+  --label-amber-foreground: #7f5f01;
+  --label-grey: #f1f2f4;
+  --label-grey-foreground: #44546f;
+  --label-blue: #e9f2ff;
+  --label-blue-foreground: #0055cc;
+  --label-green: #dcfff1;
+  --label-green-foreground: #216e4e;
+
+  --shadow-card: 0 1px 1px rgb(9 30 66 / 0.25), 0 0 1px rgb(9 30 66 / 0.31);
+  --shadow-overlay: 0 8px 12px rgb(9 30 66 / 0.15), 0 0 1px rgb(9 30 66 / 0.31);
+
+  /* Project and avatar hues. The same in both themes; white text sits on all of them. */
+  --hue-1: #0c66e4;
+  --hue-2: #1d7f8c;
+  --hue-3: #1f845a;
+  --hue-4: #6e5dc6;
+  --hue-5: #ae4787;
+  --hue-6: #c25100;
+  --hue-7: #c9372c;
+  --hue-8: #44546f;
+
+  /* How much of the project hue shows in the board backdrop. */
+  --board-tint: 100%;
 }
 
-body {
-  background: var(--color-slate-950);
-  color: var(--color-slate-200);
-  font-family: var(--font-sans), system-ui, sans-serif;
+.dark {
+  --background: #1d2125;
+  --foreground: #c7d1db;
+  --card: #22272b;
+  --card-foreground: #c7d1db;
+  --popover: #282e33;
+  --popover-foreground: #c7d1db;
+  --list: #101214;
+  --primary: #579dff;
+  --primary-foreground: #161a1d;
+  --secondary: #2c333a;
+  --secondary-foreground: #c7d1db;
+  --muted: #2c333a;
+  --muted-foreground: #8c9bab;
+  --accent: #1c2b41;
+  --accent-foreground: #85b8ff;
+  --destructive: #f87168;
+  --success: #4bce97;
+  --warning: #f5cd47;
+  --border: #38414a;
+  --input: #454f59;
+  --ring: #85b8ff;
+  --overlay: rgb(3 4 4 / 0.6);
+
+  --sidebar: #161a1d;
+  --sidebar-foreground: #c7d1db;
+  --sidebar-primary: #579dff;
+  --sidebar-primary-foreground: #161a1d;
+  --sidebar-accent: #1c2b41;
+  --sidebar-accent-foreground: #85b8ff;
+  --sidebar-border: #38414a;
+  --sidebar-ring: #85b8ff;
+
+  --label-red: #42221f;
+  --label-red-foreground: #fd9891;
+  --label-amber: #332e1b;
+  --label-amber-foreground: #f5cd47;
+  --label-grey: #2c333a;
+  --label-grey-foreground: #9fadbc;
+  --label-blue: #1c2b41;
+  --label-blue-foreground: #85b8ff;
+  --label-green: #1c3329;
+  --label-green-foreground: #7ee2b8;
+
+  /* Shadows do not read on dark surfaces; a hairline separates instead. */
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-overlay: 0 8px 16px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.08);
+
+  --board-tint: 45%;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-sm text-foreground;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 25%, transparent);
+  }
+}
+
+@layer utilities {
+  /* Thin scrollbars for board lists and other inner scroll areas. */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent) transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

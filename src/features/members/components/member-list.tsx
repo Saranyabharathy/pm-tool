@@ -1,10 +1,14 @@
 'use client'
 
+import { UserPlus } from 'lucide-react'
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/field'
-import { FormMessage } from '@/components/ui/form-message'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { addMember, removeMember } from '../actions'
 import type { Member } from '../queries'
 
@@ -17,73 +21,94 @@ type MemberListProps = {
 export function MemberList({ projectId, members, canManage }: MemberListProps) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
-  const [pending, startTransition] = useTransition()
+  const [removing, setRemoving] = useState<Member | null>(null)
+  const [adding, startAdd] = useTransition()
+  const [removePending, startRemove] = useTransition()
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    startTransition(async () => {
+    startAdd(async () => {
       const result = await addMember(projectId, { email })
-      if (result.ok) setEmail('')
-      else setError(result.fieldErrors?.email?.[0] ?? result.error)
+      if (result.ok) {
+        setEmail('')
+        toast.success('Member added')
+      } else {
+        setError(result.fieldErrors?.email?.[0] ?? result.error)
+      }
     })
   }
 
   function handleRemove(member: Member) {
-    if (!window.confirm(`Remove ${member.name} from this project? Their tasks will become unassigned.`)) return
-    setError('')
-    startTransition(async () => {
+    startRemove(async () => {
       const result = await removeMember(projectId, member.userId)
-      if (!result.ok) setError(result.error)
+      setRemoving(null)
+      if (result.ok) toast.success(`${member.name} was removed`)
+      else toast.error(result.error)
     })
   }
 
   return (
     <div className="space-y-4">
-      <ul className="divide-y divide-white/10 rounded-xl border border-white/10">
+      {canManage && (
+        <form onSubmit={handleAdd} className="space-y-1.5">
+          <label htmlFor="member-email" className="block text-xs font-medium text-muted-foreground">
+            Add a member by email
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id="member-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="teammate@example.com"
+              required
+              aria-invalid={Boolean(error)}
+              aria-describedby="member-email-help"
+              className="bg-card"
+            />
+            <Button type="submit" disabled={adding} className="shrink-0">
+              {adding ? <Spinner /> : <UserPlus aria-hidden />}
+              Add
+            </Button>
+          </div>
+          <p id="member-email-help" className={error ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>
+            {error || 'They need an account already. No invitation email is sent.'}
+          </p>
+        </form>
+      )}
+
+      <ul className="divide-y rounded-lg border">
         {members.map((member) => (
-          <li key={member.userId} className="flex items-center justify-between gap-3 px-4 py-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-slate-100">{member.name}</p>
-              <p className="truncate text-xs text-slate-400">{member.email}</p>
+          <li key={member.userId} className="flex items-center gap-3 px-3 py-2.5">
+            <UserAvatar id={member.userId} name={member.name} size="lg" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{member.name}</p>
+              <p className="truncate text-xs text-muted-foreground">{member.email}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Badge tone={member.role === 'owner' ? 'blue' : 'neutral'}>
-                {member.role === 'owner' ? 'Owner' : 'Member'}
-              </Badge>
-              {canManage && member.role !== 'owner' && (
-                <Button variant="ghost" size="sm" onClick={() => handleRemove(member)} disabled={pending}>
-                  Remove
-                </Button>
-              )}
-            </div>
+            <Badge tone={member.role === 'owner' ? 'blue' : 'grey'}>
+              {member.role === 'owner' ? 'Owner' : 'Member'}
+            </Badge>
+            {canManage && member.role !== 'owner' && (
+              <Button variant="ghost" size="sm" onClick={() => setRemoving(member)}>
+                Remove
+              </Button>
+            )}
           </li>
         ))}
       </ul>
 
-      {canManage && (
-        <form onSubmit={handleAdd} className="flex flex-col gap-3 sm:flex-row">
-          <label htmlFor="member-email" className="sr-only">
-            Email of the person to add
-          </label>
-          <Input
-            id="member-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="teammate@example.com"
-            required
-          />
-          <Button type="submit" disabled={pending} className="shrink-0">
-            {pending ? 'Working...' : 'Add member'}
-          </Button>
-        </form>
-      )}
-
-      <FormMessage>{error}</FormMessage>
-      {canManage && (
-        <p className="text-xs text-slate-500">The person needs an account already. No invitation email is sent.</p>
-      )}
+      <ConfirmDialog
+        open={removing !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoving(null)
+        }}
+        title={removing ? `Remove ${removing.name}?` : ''}
+        description="They lose access to this project, and tasks assigned to them become unassigned."
+        confirmLabel="Remove member"
+        pending={removePending}
+        onConfirm={() => removing && handleRemove(removing)}
+      />
     </div>
   )
 }
