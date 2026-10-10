@@ -45,7 +45,10 @@ A client component must not import from `queries.ts`, `src/db` or `src/lib/auth.
 - Queries are named `listX` and `getX`; actions are verbs such as `createTask` and `removeMember`.
 - Import across folders with the `@/` alias and within a feature with relative paths.
 - TypeScript is in strict mode. Avoid `any`; derive types from the schema (`typeof tasks.$inferSelect`) or from a query (`Awaited<ReturnType<typeof listTasks>>[number]`) so they follow the database.
-- Style with Tailwind classes. Reuse `src/components/ui` before adding a new primitive.
+- Style with Tailwind classes that name design tokens (`bg-card`, `text-muted-foreground`, `border-border`), never raw palette colours (`bg-slate-900`). [DESIGN.md](../DESIGN.md) lists the tokens and the rules for spacing, type and motion.
+- Reuse `src/components/ui` before adding a new primitive. Add shadcn components with `npx shadcn@latest add <name>`.
+- Report the result of an action with a toast (`toast.success`, `toast.error` from `sonner`), field problems inline, and confirm destructive actions with `ConfirmDialog`. Do not use `alert` or `confirm`.
+- React Bits components go in `src/components/reactbits` and are used only where DESIGN.md allows.
 - Comments explain why, not what.
 
 ## Tests
@@ -72,7 +75,7 @@ expectError(await deleteProject(projectId), /Project not found/)
 
 When you add an action, add a test that someone who is not a member, and where relevant a member who is not the owner, cannot use it.
 
-Not covered by automated tests: the sign-in forms, page rendering and drag and drop in the browser. Check those by hand after changing them.
+Not covered by automated tests: the sign-in forms, page rendering and drag and drop in the browser. Check those by hand after changing them, in both themes and at a phone width.
 
 ## Before committing
 

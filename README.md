@@ -9,13 +9,15 @@ A small project management app: projects, a kanban board, task details, team mem
 - Tasks with status, priority, due date, assignee and description
 - Kanban board with drag and drop, plus a filterable list view
 - Comments on tasks
+- Light and dark themes that follow the system setting
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
 | Framework | Next.js 16 (App Router), React 19, TypeScript |
-| Styling | Tailwind CSS 4 |
+| Styling | Tailwind CSS 4 with design tokens ([DESIGN.md](DESIGN.md)) |
+| UI components | shadcn/ui on Base UI, lucide icons, sonner toasts, a few React Bits effects |
 | Database | PostgreSQL 17 |
 | ORM and migrations | Drizzle ORM, drizzle-kit |
 | Auth | Better Auth (email and password, sessions stored in Postgres) |
@@ -57,6 +59,7 @@ Open http://localhost:3000. After seeding you can log in as `alex@example.com` (
 - [Architecture](docs/architecture.md): folder structure, request flow, auth and permissions
 - [Database](docs/database.md): tables, relationships, migration workflow
 - [Conventions](docs/conventions.md): how to add a feature, validation, errors, tests
+- [Design system](DESIGN.md): colours, type, spacing, components, the board, where animation is allowed
 
 ## Not in the MVP
 

@@ -35,6 +35,7 @@ src/
     (app)/               everything behind sign-in; its layout checks the session
       projects/                          project list
       projects/[projectId]/              board (page), list/, settings/, tasks/[taskId]/
+      projects/[projectId]/@modal/       the card dialog (see "The card dialog")
     api/auth/[...all]/   Better Auth HTTP handler
   db/
     index.ts             connection pool and Drizzle client
@@ -46,7 +47,11 @@ src/
       queries.ts         reads, called from Server Components
       actions.ts         writes, exposed as Server Actions
       components/        UI specific to the feature
-  components/            shared UI: ui/ primitives, auth form, sign-out button
+  components/
+    ui/                  primitives: button, input, dialog, menu, badge, avatar ...
+    shell/               top bar, sidebar, user menu, theme toggle
+    reactbits/           animated components copied from React Bits
+    providers.tsx        theme, tooltips and toasts
 ```
 
 `src/app` holds routing and page composition. Business logic lives in `src/features`. The dependency direction is `app → features → lib → db`; features do not import from `app`.
@@ -118,8 +123,20 @@ Each task has a `status` (its column) and a `position` (its zero-based index in 
 
 If the action fails, the board restores the order from before the drag and shows the error. Creating a task appends it to its column; deleting one or changing its status through the edit form renumbers the affected columns the same way.
 
+## The card dialog
+
+A task has one URL, `/projects/[projectId]/tasks/[taskId]`, and two presentations:
+
+- **Opened from inside the project** (a card on the board, a row in the list), it appears in a dialog over the current page. The `@modal` parallel route slot in the project layout holds an intercepting route, `@modal/(.)tasks/[taskId]`, which Next.js renders instead of leaving the page. Closing the dialog calls `router.back()`.
+- **Loaded directly** (a shared link, a reload), the ordinary page `tasks/[taskId]/page.tsx` renders.
+
+Both render the same server component, `TaskDetail`, so there is one implementation. `@modal/default.tsx`, `@modal/page.tsx` and `@modal/[...catchAll]/page.tsx` return nothing; they empty the slot on a direct load and when navigating to another page of the project.
+
+## Interface
+
+The app shell (`src/components/shell`) is a top bar and a sidebar listing the user's projects; the page scrolls inside it. Looks are defined once as design tokens in `src/app/globals.css` for light and dark, documented in [DESIGN.md](../DESIGN.md). A project's colour and a person's avatar colour are derived from their id (`src/lib/color.ts`), not stored.
+
 ## Known limitations
 
 - A page for a project you cannot access shows the "Page not found" screen but with HTTP status 200, because the response has already started streaming the loading state. No project data is sent.
 - The board does not update live when someone else changes it; it refreshes on navigation or after your own next change.
-- The app is dark-only.
