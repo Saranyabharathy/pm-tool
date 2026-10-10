@@ -15,7 +15,14 @@ Either download the installer from https://www.postgresql.org/download/windows/ 
 winget install PostgreSQL.PostgreSQL.17
 ```
 
-Accept the administrator prompt. The installer asks for a password for the `postgres` superuser; keep it, you need it in the next step. Leave the port at 5432. Stack Builder and pgAdmin are optional.
+Accept the administrator prompt. You need the password of the `postgres` superuser in the next step:
+
+- The downloaded installer asks you to choose one. Leave the port at 5432; Stack Builder and pgAdmin are optional.
+- `winget` installs silently and does not ask. The password is then the default, `postgres`. Change it if anyone else can reach this machine's database:
+
+  ```powershell
+  & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -c "\password postgres"
+  ```
 
 The installer registers PostgreSQL as a Windows service that starts with the machine. It does not add the command line tools to your `PATH`, so the commands below use the full path.
 
